@@ -3,7 +3,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const exphbs = require("express-handlebars");
-const controller = require("./controllers/controller")
+const router = require("./controller/routes")
 
 // Our scraping tools
 // Axios is a promised-based http library, similar to jQuery's Ajax method
@@ -16,7 +16,6 @@ let PORT = process.env.PORT || 3000;
 // Initialize Express
 const app = express();
 
-// Configure middleware
 // Parse request body as JSON
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -25,22 +24,15 @@ app.use(express.json());
 // Serve static content for the app from the "public" directory in the application directory.
 app.use(express.static("public"));
 
-// index route
-app.get("/", function(re, res) {
-  res.sendFile(path.join(__dirname + "./public/index.html"));
-});
-
-app.use(controller);
-
-
+// establish handlebars middleware
 app.engine("handlebars", exphbs({ defaultLayout: "main" }));
 app.set("view engine", "handlebars");
 
 // Connect to the Mongo DB
-mongoose.connect("mongodb://localhost/washingtonPost", { useNewUrlParser: true });
+mongoose.connect("mongodb://localhost/wDC-Post", { useNewUrlParser: true });
 
 // set up Routes in controller
-
+require("./controller/routes");
 
 // Listen on port 3000
 app.listen(3000, function () {
