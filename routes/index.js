@@ -1,48 +1,87 @@
 // // dependencies
 const express = require("express");
 const router = express.Router();
-// const mongoose = require("mongoose");
-// const db = require("../models");
-// const axios = require("axios");
-// const cheerio = require("cheerio");
+const path = require("path");
 
+// scraping tools
+const axios = require("axios");
+const cheerio = require("cheerio");
 //  require models
 const Article = require('../models/article');
 const Note = require('../models/note');
 
-// get home page
-router.get("/", function(req, res){
-  res.render("index", {title: "Washington Post Scraper", condition: false});
+// const mongoose = require("mongoose");
+// const db = require("../models");
+
+// first route for index
+router.get("/", function (req, res) {
+  res.redirect("./articles");
 });
 
-// router.get("/", function(req, res) {
-//   res.render("./articles");
-// });
+// get request to scrape the website
+// scraping route
+router.get("/scrape", function (req, res) {
+  // First, we grab the body of the html with axios
+  axios.get("http://www.washingtonpost.com").then(function (response) {
+    // Then, we load that into cheerio and save it to $ for a shorthand selector
+    const $ = cheerio.load(response.data);
+    let storiesArray = [];
+    //Now, we grab every h2 within an article tag, and do the following:
+    $("h2.headline").each(function (i, element) {
+      // Save an empty result object
+      // let headline = $(element).children("a").text();
+      // let blurb = $(element).children("a").text();
+      // let link = $(element).children("a").attr("href");
+      let result = {};
+      result.headline = $(this)
+        .find("h2")
+        .text();
+      result.blurb = $(this)
+        .find("p")
+        .text();
+      result.link = $(this)
+        .find("a")
+        .attr("href");
 
-// // scraping route
-// router.get("/scrape", function (req, res) {
-//   // First, we grab the body of the html with axios
-//   axios.get("http://www.washingtonpost.com").then(function (response) {
-//     // Then, we load that into cheerio and save it to $ for a shorthand selector
-//     const $ = cheerio.load(response.data);
+      if (reslult.headline !== "" && reslult.link !== "" && result.blurb !== "") {
+        if (storiesArray.indexOf(result.headline) == -1) {
+          storiesArray.push(result.headline);
+        }
+        if (result.blurb !== "") {
+          blurb.push("No blurb available.")
+        };
 
-//     // Now, we grab every h2 within an article tag, and do the following:
-//     $("h2.headline").each(function (i, element) {
-//       // Save an empty result object
-//       let headline = $(element).children("a").text();
-//       let blurb = $(element).children("a").text();
-//       let link = $(element).children("a").attr("href");
+        Article.count({ title: result.title }, function (err, test) {
+          if (test === 0) {
+            var entry = new Article(result);
 
-//       // If this found element had both a title and a link
-//       if (headline) {
-//       }
-//       if ($(element).next().hasClass('blurb')) {
-//         blurbs.push($(element).next(".blurb").text());
-//       }
-//       else {
-//         blurbs.push("No blurb available")
-//       }
-//       if (link) {
+            entry.save(function (err, doc) {
+              if (err) {
+                console.log(err);
+              } else {
+                console.log(doc);
+              }
+            });
+          }
+        });
+      } else {
+        console.log("Article already exists.");
+      }
+       else {
+        console.log("Not saved to DB, missing data");
+      }
+    });
+    res.redirect("/");
+  });
+});
+
+
+router.get("/", function (req, res) {
+  res.render("index", { title: "Washington Post Scraper", condition: false });
+});
+
+
+
 
 //         // Insert the data in the wDC-Post db
 //         db.Article.insert({
@@ -129,7 +168,7 @@ router.get("/", function(req, res){
 //     });
 
 
-    
+
 //     // delete article
 //     router.delete("/article/:id", function (req, res) {
 //       Article.findOneAndDelete({ _id: req.params.id })
@@ -141,5 +180,5 @@ router.get("/", function(req, res){
 //       });
 //     });
 //   });
-  
-  module.exports = router;
+
+module.exports = router;
