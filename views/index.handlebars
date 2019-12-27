@@ -1,12 +1,20 @@
-<header class="header">
-  <h1 id="neon">[ WEB-SCRAPER ]</h1>
-  <nav class="button-group">
-    <button class="button-dark" id="scrape" data-toggle="modal">Scrape New Articles</button>
-    <a href="/articles/viewSaved"><button class="button-dark" id="viewSaved">View Saved Articles</button></a>
-  </nav>
-</header>
-<div class="filler"></div>
+<!--Homepage-->
 
+<header class="header">
+    <h4 class="wpScrape">Welcome to Washington Post Headlines</h4>
+    <nav class="navbar navbar-default navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <nav class="button-group">
+                    <button class="button-dark" id="scrape" data-toggle="modal">Scrape New Articles</button>
+                    <a href="/articles/viewSaved"><button class="button-dark" id="viewSaved">View Saved
+                            Articles</button></a>
+                </nav>
+
+            </div>
+        </div>
+    </nav>
+</header>
 {{#each articles}}
   {{#unless saved}}
     <figure class="storyPanel clearfix">
@@ -57,5 +65,43 @@
   </div>
 </div>
 
-{{!-- Loader --}}
-<div id="loader">Loading...</div>
+
+
+
+
+
+
+
+
+
+{{!-- <div class="container">
+    <div class="col-md-12 jumbotron">
+        <div class="text-center">
+            <h1> {{ title }} </h1>
+            <p>Welcome to {{ title }}</p>
+        </div>
+    </div>
+    <div class="col-md-12">
+        {{#if article}}
+        {{#each article}}
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h4>{{this.headline}}</h4>
+            </div>
+            <div class="panel-body">
+                <p> {{this.blurb}}</p>
+                <a href={{this.link}} target="_blank">{{this.link}}</a>
+                <br><br>
+                <button type="button" class="btn btn-success save" data-id={{this._id}}>Save Article</button>
+            </div>
+        </div>
+        {{/each}}
+        {{else}}
+        <div class="panel panel-default">
+            <div class="panel-body">
+                <h4>Sorry, there are no new articles at the moment.</h4>
+            </div>
+        </div>
+        {{/if}}
+    </div>
+</div> --}}
