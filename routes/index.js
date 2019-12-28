@@ -10,8 +10,9 @@ const cheerio = require("cheerio");
 const Article = require('../models/article');
 const Note = require('../models/note');
 
-// const mongoose = require("mongoose");
-// const db = require("../models");
+
+const mongoose = require("mongoose");
+const db = require("../models");
 
 // first route for index
 router.get("/", function (req, res) {
@@ -29,156 +30,150 @@ router.get("/scrape", function (req, res) {
     //Now, we grab every h2 within an article tag, and do the following:
     $("h2.headline").each(function (i, element) {
       // Save an empty result object
-      // let headline = $(element).children("a").text();
-      // let blurb = $(element).children("a").text();
-      // let link = $(element).children("a").attr("href");
-      let result = {};
-      result.headline = $(this)
-        .find("h2")
-        .text();
-      result.blurb = $(this)
-        .find("p")
-        .text();
-      result.link = $(this)
-        .find("a")
-        .attr("href");
+      let headline = $(element).children("a").text();
+      let blurb = $(element).children("a").text();
+      let link = $(element).children("a").attr("href");
+      // let result = {};
+      // result.headline = $(this)
+      //   .find("h2")
+      //   .text();
+      // result.blurb = $(this)
+      //   .find("p")
+      //   .text();
+      // result.link = $(this)
+      //   .find("a")
+      //   .attr("href");
 
-      if (reslult.headline !== "" && reslult.link !== "" && result.blurb !== "") {
-        if (storiesArray.indexOf(result.headline) == -1) {
-          storiesArray.push(result.headline);
-        }
-        if (result.blurb !== "") {
-          blurb.push("No blurb available.")
+      // if (headline !== "" && link !== "" && blurb !== "") {
+      //   if (storiesArray.indexOf(result.headline) == -1) {
+      //     storiesArray.push(result.headline);
+      //   }
+        if (!blurb) {
+          blurb = "No blurb available."
         };
 
-        Article.count({ title: result.title }, function (err, test) {
-          if (test === 0) {
-            var entry = new Article(result);
+        // Insert the data in the wDC-Post db
+        db.Article.insert({
+          headline: headline,
+          blurb: blurb,
+          link: link
+        },
+          function (err, inserted) {
+            if (err) {
+              // Log the error if one is encountered during the query
+              console.log(err);
+            }
+            else {
+              // Otherwise, log the inserted data
+              console.log(inserted);
+            }
+          });
+        // Send a "Scrape Complete" message to the browser
+        res.send("Scrape Complete");
+      
+    });
+  })
+});
 
-            entry.save(function (err, doc) {
-              if (err) {
-                console.log(err);
-              } else {
-                console.log(doc);
-              }
-            });
-          }
-        });
+
+
+router.get("/article", function (req, res) {
+  db.Article.find()
+    .sort({ _id: -1 })
+    .exec(function (err, doc) {
+      if (err) {
+        console.log(err);
       } else {
-        console.log("Article already exists.");
-      }
-       else {
-        console.log("Not saved to DB, missing data");
+        let article = { article: doc };
+        res.render("index", article);
       }
     });
-    res.redirect("/");
+});
+
+router.get("/articles-json", function (req, res) {
+  Article.find({}, function (err, doc) {
+    if (err) {
+      console.log(err);
+    } else {
+      res.json(doc);
+    }
   });
 });
 
-
-router.get("/", function (req, res) {
-  res.render("index", { title: "Washington Post Scraper", condition: false });
+router.get("/clearAll", function (req, res) {
+  Article.remove({}, function (err, doc) {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log("removed all articles");
+    }
+  });
+  res.redirect("/articles-json");
 });
 
+router.get("/readArticle/:id", function (req, res) {
+  let articleId = req.params.id;
+  let hbsObj = {
+    article: [],
+    body: []
+  };
 
+  Article.findOne({ _id: articleId })
+    .populate("note")
+    .exec(function (err, doc) {
+      if (err) {
+        console.log("Error: " + err);
+      } else {
+        hbsObj.article = doc;
+        let link = doc.link;
+        request(link, function (error, response, html) {
+          var $ = cheerio.load(html);
 
+          $(".l-col__main").each(function (i, element) {
+            hbsObj.body = $(this)
+              .children(".c-entry-content")
+              .children("p")
+              .text();
 
-//         // Insert the data in the wDC-Post db
-//         db.Article.insert({
-//           title: title,
-//           blurb: blurb,
-//           link: link
-//         },
-//           function (err, inserted) {
-//             if (err) {
-//               // Log the error if one is encountered during the query
-//               console.log(err);
-//             }
-//             else {
-//               // Otherwise, log the inserted data
-//               console.log(inserted);
-//             }
-//           });
-//       }
-//     });
-//   })
-//   // Send a "Scrape Complete" message to the browser
-//   res.send("Scrape Complete");
-// })
+            res.render("article", hbsObj);
+            return false;
+          });
+        });
+      }
+    });
+});
+router.post("/note/:id", function (req, res) {
+  let user = req.body.name;
+  let content = req.body.note;
+  let articleId = req.params.id;
 
-// // get article from db to populate the DOM
-// router.get("/article", function (req, res) {
-//   // get every article in array
-//   Article.find({})
-//     .then(function (Article) {
-//       res.json(Article);
-//     })
-//     .catch(function (err) {
-//       res.json(err);
-//     });
-// });
+  let note = {
+    name: user,
+    body: content
+  };
 
-// // get article by id
-// router.get("/article/:id", function (req, res) {
-//   // using the id, query db for match
-//   Article.findOne({ _id: req.params.id })
-//   // populate notes associated with the article/id and execute query
-//     .populate("note")
-//     .then(function (Article) {
-//       res.json(Article);
-//     })
-//     .catch(function (err) {
-//       res.json(err);
-//     });
-// });
+  let newNote = new Note(note);
 
-// // save an article
-// router.post("/saveArticle", function (req, res) {
-//   Article.create(req.body)
-//     .then(function (Article) {
-//       res.json(Article);
-//     })
-//     .catch(function (err) {
-//       res.json(err);
-//     });
-// });
+  newNote.save(function (err, doc) {
+    if (err) {
+      console.log(err);
+    } else {
+      console.log(doc._id);
+      console.log(articleId);
 
-// // create a note
-// router.post("/article/:id", function (req, res) {
-//   Note.create(req.body)
-//     .then(function (Note) {
-//       return Article.findOneAndUpdate({ _id: req.params.id }, { $push: { note: Note._id } }, { new: true });
-//     })
-//     .then(function (Article) {
-//       res.json(Article);
-//     })
-//     .catch(function (err) {
-//       res.json(err);
-//     });
-// });
-
-// // delete note
-// router.delete("/note/:id", function (req, res) {
-//   Note.findOneAndDelete({ _id: req.params.id })
-//     .then(function (Note) {
-//       res.json(Note);
-//     })
-//     .catch(function (err) {
-//       res.json(err);
-//     });
-
-
-
-//     // delete article
-//     router.delete("/article/:id", function (req, res) {
-//       Article.findOneAndDelete({ _id: req.params.id })
-//       .then(function (Article) {
-//         res.json(Article);
-//       })
-//       .catch(function (err) {
-//         res.json(err);
-//       });
-//     });
-//   });
+      Article.findOneAndUpdate(
+        { _id: req.params.id },
+        { $push: { note: doc._id } },
+        { new: true }
+      ).exec(function (err, doc) {
+        if (err) {
+          console.log(err);
+        } else {
+          res.redirect("/readArticle/" + articleId);
+        }
+      });
+    }
+  });
+});
 
 module.exports = router;
